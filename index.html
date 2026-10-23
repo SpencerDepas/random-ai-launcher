@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Random AI</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<meta name="theme-color" content="#111111">
+<style>
+  html, body { margin: 0; height: 100%; background: #111; color: #fff; font-family: system-ui, sans-serif; }
+  .screen { display: none; height: 100%; box-sizing: border-box; padding: 24px 16px;
+            flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 20px; }
+  .screen.on { display: flex; }
+  h1 { margin: 0; font-size: 1.8rem; }
+  p, ol { margin: 0; color: #bbb; line-height: 1.5; max-width: 26rem; }
+  ol { text-align: left; }
+  .btn { display: block; box-sizing: border-box; width: 100%; max-width: 26rem; padding: 22px; border-radius: 16px;
+         background: #fff; color: #111; text-decoration: none; font-size: 1.5rem; font-weight: 600; }
+  #launch .btn { flex: 1; max-height: 60vh; display: flex; align-items: center; justify-content: center; }
+</style>
+</head>
+<body>
+
+<!-- Shown when opened in a normal browser tab: set-up instructions, no auto-launch -->
+<section id="setup" class="screen">
+  <h1>Random AI</h1>
+  <p>Opens Gemini, Claude or ChatGPT at random.</p>
+  <ol>
+    <li>Tap <b>⋮</b> (top right in Chrome).</li>
+    <li>Tap <b>Add to Home screen</b> (or <b>Install app</b>), then <b>Install</b>.</li>
+    <li>Open it from the new home screen icon.</li>
+  </ol>
+  <a class="btn" id="try">Try it now</a>
+</section>
+
+<!-- Shown when opened from the home screen icon: picks one and launches it -->
+<section id="launch" class="screen">
+  <a class="btn" id="go">…</a>
+  <p>Tap if it doesn't open by itself.</p>
+</section>
+
+<script>
+  const apps = [
+    { name: "Gemini",  pkg: "com.google.android.apps.bard", web: "https://gemini.google.com" },
+    { name: "Claude",  pkg: "com.anthropic.claude",         web: "https://claude.ai" },
+    { name: "ChatGPT", pkg: "com.openai.chatgpt",           web: "https://chatgpt.com" },
+  ];
+
+  const isAndroid = /Android/i.test(navigator.userAgent);
+
+  function pick() {
+    const a = apps[Math.floor(Math.random() * apps.length)];
+    // Android intent link opens the installed app, or the website if it isn't installed
+    a.url = isAndroid
+      ? "intent://#Intent;package=" + a.pkg +
+        ";action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER" +
+        ";S.browser_fallback_url=" + encodeURIComponent(a.web) + ";end"
+      : a.web;
+    return a;
+  }
+
+  function arm(el, label) {
+    const a = pick();
+    el.href = a.url;
+    el.textContent = label(a.name);
+    return a;
+  }
+
+  // The home screen icon opens "?go" (see manifest start_url); a normal visit doesn't
+  const fromHomeScreen = new URLSearchParams(location.search).has("go") ||
+                         matchMedia("(display-mode: standalone)").matches;
+
+  if (fromHomeScreen) {
+    document.getElementById("launch").classList.add("on");
+    const go = document.getElementById("go");
+    const a = arm(go, n => "Open " + n);
+    location.href = a.url;
+    // When you come back to this screen later, pick a new one but don't auto-launch
+    // (auto-launching here would bounce you straight back into an app)
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") arm(go, n => "Open " + n);
+    });
+  } else {
+    document.getElementById("setup").classList.add("on");
+    arm(document.getElementById("try"), n => "Try it now (" + n + ")");
+  }
+</script>
+</body>
+</html>
