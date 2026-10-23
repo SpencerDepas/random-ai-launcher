@@ -42,19 +42,22 @@
 
 <script>
   const apps = [
-    { name: "Gemini",  pkg: "com.google.android.apps.bard", web: "https://gemini.google.com" },
-    { name: "Claude",  pkg: "com.anthropic.claude",         web: "https://claude.ai" },
-    { name: "ChatGPT", pkg: "com.openai.chatgpt",           web: "https://chatgpt.com" },
+    { name: "Gemini",  pkg: "com.google.android.apps.bard", web: "https://gemini.google.com/app" },
+    { name: "Claude",  pkg: "com.anthropic.claude",         web: "https://claude.ai/new" },
+    { name: "ChatGPT", pkg: "com.openai.chatgpt",           web: "https://chatgpt.com/" },
   ];
 
   const isAndroid = /Android/i.test(navigator.userAgent);
 
   function pick() {
     const a = apps[Math.floor(Math.random() * apps.length)];
-    // Android intent link opens the installed app, or the website if it isn't installed
+    // Hand the app its own https link, pinned to its package so Chrome doesn't keep it.
+    // (Chrome only lets web pages open an app's link-handling screen, not its launcher.)
+    // Falls back to the website if the app isn't installed.
+    const u = new URL(a.web);
     a.url = isAndroid
-      ? "intent://#Intent;package=" + a.pkg +
-        ";action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER" +
+      ? "intent://" + u.host + u.pathname + "#Intent;scheme=https;action=android.intent.action.VIEW" +
+        ";package=" + a.pkg +
         ";S.browser_fallback_url=" + encodeURIComponent(a.web) + ";end"
       : a.web;
     return a;
